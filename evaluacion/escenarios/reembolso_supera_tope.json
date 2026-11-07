@@ -1,0 +1,20 @@
+{
+  "nombre": "Reembolso sobre el tope",
+  "descripcion": "El pedido propio de C-03 tiene reclamo por el TV; una solicitud de 600000 COP debe quedar pendiente y escalarse.",
+  "cliente": "C-03",
+  "turnos": [
+    "P-1007 llegó con la pantalla defectuosa. Quiero reclamar por el Televisor 55 pulgadas: tiene rayas.",
+    "Solicito un reembolso de 600000 pesos para P-1007 por ese defecto.",
+    "Sí, confirmo el reembolso de 600000 para P-1007."
+  ],
+  "verificaciones": {
+    "herramientas_llamadas": [
+      "registrar_reclamo",
+      "solicitar_reembolso",
+      "escalar_asesor"
+    ],
+    "herramientas_no_llamadas": [],
+    "argumentos": [],
+    "estado_final": []
+  }
+}

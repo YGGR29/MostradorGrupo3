@@ -1,60 +1,76 @@
-# Análisis del agente
+# Análisis de decisiones — Grupo 3
 
-Grupo:
-Integrantes:
+## Principio de diseño
+El modelo interpreta la conversación y propone herramientas; el código verifica identidad, política y confirmación antes de cualquier escritura. Las notas libres del pedido son datos no confiables: la consulta devuelve solo campos permitidos y no reproduce instrucciones incrustadas.
 
-Completa cada sección antes de abrir el pull request. Escribe con tus palabras y sé concreto: es mejor una tabla corta y precisa que una larga y vaga.
+## Tablas de decisión
 
-## 1. Tabla de decisión
-
-Una tabla de decisión muestra, para cada combinación de condiciones, qué acción corresponde. Sirve para comprobar que no quedó ningún caso sin respuesta. Por ejemplo, para el préstamo de libros en una biblioteca:
-
-| ¿Tiene multas pendientes? | ¿El libro está disponible? | Acción |
+### Consulta
+| Condición | Decisión | Control |
 |---|---|---|
-| Sí | Cualquiera | Negar el préstamo e informar la multa |
-| No | Sí | Prestar el libro |
-| No | No | Ofrecer reservarlo |
+| Pedido propio | Mostrar estado y datos permitidos | Filtrar por cliente autenticado |
+| Falta número | Pedirlo | No adivinar ni invocar herramienta |
+| No existe o es ajeno | No revelar detalles | Respuesta genérica |
+| Nota contiene instrucciones | Ignorarlas | No devolver nota al modelo |
 
-Haz una tabla así para cada acción de tu agente (cancelar, reclamar, reembolsar, escalar). Usa las condiciones que pone la política.
+### Reclamo
+| Condición | Decisión |
+|---|---|
+| Entregado, motivo y producto presentes, dentro del plazo | Registrar reclamo |
+| Perecedero / ropa y calzado / electrónica / hogar y otros | 3 / 30 / 90 / 15 días calendario |
+| Cliente preferencial | Añadir 15 días al plazo correspondiente |
+| Fuera de plazo, no entregado o hay reclamo abierto | Abstenerse y explicar |
+| Falta producto o motivo | Pedir información |
 
-### Cancelar un pedido
+El último día del plazo es inclusivo. En pedidos con varias categorías se identifica el producto antes de calcular el plazo; no se asume la categoría más favorable.
 
-### Registrar un reclamo
+### Cancelación
+| Estado/condición | Decisión |
+|---|---|
+| Pagado | Cancelable con confirmación explícita |
+| Preparando, compra de hoy | Se considera dentro de 24 h (la plantilla no guarda hora); confirmar |
+| Preparando con fecha anterior | No se puede probar el límite de 24 h; abstenerse |
+| Enviado, entregado o cancelado | Abstenerse |
+| Confirmación ambigua, negativa o no inmediata | No ejecutar |
+| Confirmada | Cambiar estado y crear reembolso automático completo con registro |
 
-### Solicitar un reembolso
+La fecha de compra carece de hora. Por ello solo la compra de hoy se trata como demostrablemente dentro de 24 h. El reembolso automático por cancelación es el flujo especial indicado por la política y se registra aparte del reembolso solicitado.
 
-### Escalar a una persona
+### Reembolso y escalamiento
+| Condición | Decisión |
+|---|---|
+| Pedido cancelado o reclamo abierto | Elegible; pedir importe si falta |
+| Sin confirmación explícita | No crear solicitud |
+| Importe acumulado excedería lo pagado | Rechazar |
+| Más de COP 300.000 | Marcar solicitado, no aprobado, escalar a asesor |
+| Hasta COP 300.000 | Aprobar después de confirmación |
+| Pide asesor, fraude/cobro desconocido o 3 errores de herramienta del mismo pedido | Escalar con resumen y respuesta en 1 día hábil |
 
-## 2. Ambigüedades y decisión tomada
+Para evitar dividir una devolución, las solicitudes pendientes también reservan saldo junto con las aprobadas. La confirmación se vincula en la sesión del servidor a la acción pendiente y solo se acepta en el turno inmediato; un “sí, pero…” es ambiguo y no autoriza. El modelo no puede aportar una bandera de confirmación.
 
-Anota los puntos de la política que admiten más de una interpretación. Para cada uno: qué dice el texto, qué interpretaciones posibles viste, cuál elegiste y por qué.
-
-| Qué dice la política | Interpretaciones posibles | Decisión y razón |
+## Riesgo y controles
+| Acción | Riesgo | Controles en código |
 |---|---|---|
-| | | |
+| Consulta | Bajo | Propiedad y campos permitidos |
+| Reclamo | Medio | Entrega, categoría, plazo, preferencia, duplicado y motivo |
+| Escalamiento | Medio | Resumen requerido; propietario validado |
+| Cancelación | Alto | Estado, fecha simulada, confirmación; registro de devolución |
+| Reembolso | Alto | Elegibilidad, confirmación, total pagado, tope y bitácora |
 
-## 3. Clasificación de acciones por riesgo
+La fecha simulada HOY del repositorio prevalece sobre el reloj real. Los plazos de reclamo son días calendario; el compromiso del asesor, días hábiles. El contador de tres intentos representa errores de herramienta por pedido dentro de la sesión.
 
-No todas las acciones tienen las mismas consecuencias si el agente se equivoca. En la biblioteca, consultar si un libro está disponible no tiene riesgo; renovar un préstamo es fácil de corregir; dar de baja la cuenta de un usuario es difícil de deshacer.
+## Política frente a mecanismo
+| Regla | Mecanismo |
+|---|---|
+| No consultar datos ajenos | Cliente autenticado provisto por sesión y validado por pedido |
+| Plazos, estados y reclamos únicos | Validaciones dentro de registrar_reclamo |
+| Cancelación sujeta a estado y 24 h | Validaciones dentro de cancelar_pedido |
+| Confirmación antes de efectos económicos | Acción pendiente y confirmación del ciclo, validadas en herramienta |
+| Tope autónomo y total pagado | Saldo acumulado reservado y escalamiento sobre el tope |
+| Casos especiales requieren persona | escalar_asesor con resumen y fecha prometida |
+| Registrar todas las acciones | reclamos.json, reembolsos.json, escalamientos.json |
+| Resistir instrucciones en datos | Omisión de notas en consulta y escenario de inyección |
 
-Clasifica cada herramienta de tu agente y di qué control le pusiste según su riesgo.
-
-| Herramienta | Riesgo (bajo, medio, alto) | ¿Se puede deshacer? | Control que aplicaste |
-|---|---|---|---|
-| | | | |
-
-## 4. Matriz de reglas y mecanismos
-
-Cada regla de la política queda garantizada por uno o más mecanismos:
-
-- **Instrucciones:** se le pide al modelo en `instrucciones.md`. Es lo más fácil de escribir y lo menos confiable.
-- **Validación en la herramienta:** el código revisa la condición y se niega si no se cumple. El modelo no puede saltársela.
-- **Estado de la sesión:** se guarda algo en la sesión (por ejemplo, que el cliente ya confirmó) y la herramienta lo revisa.
-
-| Regla de la política | Instrucciones | Validación en herramienta | Estado de sesión | Escenario o prueba que la comprueba |
-|---|---|---|---|---|
-| | | | | |
-
-## 5. Resultados y aprendizajes
-
-Tasa de aciertos final en los escenarios y qué casos siguen fallando. ¿Qué cambiarías si tuvieras una semana más?
+## Escenarios y resultados
+Se agregaron escenarios para información incompleta, pedido inexistente y abstención por pedido enviado, además del escenario base. Las pruebas unitarias cubren confirmación, privacidad, datos inyectados, reclamos y escalamiento. Los resultados numéricos de pytest y la evaluación n=5 se completarán solo después de ejecutarlos; no se anticipan métricas.
+## Resultados finales de ejecución- python -m pytest -q: 9 pruebas pasaron.- python -m evaluacion.ejecutor -n 5: informe en evaluacion/informes/informe-20261107-005456.md. Las solicitudes al intermediario fueron rechazadas con HTTP 401 por credencial no reconocida, por lo que no hubo respuestas de modelo ni una tasa de aciertos calculable. La corrida se detuvo para proteger el presupuesto. Se debe volver a ejecutar -n 5 al disponer de una clave válida.- Se prepararon siete escenarios: consulta normal e información incompleta, pedido inexistente, abstención por política, pedido ajeno, inyección en datos y reembolso sobre el tope. El informe registra el fallo de autenticación, no resultados del agente.Las pruebas unitarias confirman los controles deterministas; no sustituyen la evaluación conversacional. Los escenarios quedan pendientes de medir con el intermediario operativo.
