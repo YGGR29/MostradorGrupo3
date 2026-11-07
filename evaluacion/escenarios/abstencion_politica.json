@@ -1,0 +1,16 @@
+{
+  "nombre": "Abstención por política",
+  "descripcion": "El cliente pide cancelar el pedido enviado; la herramienta se debe abstener y el estado permanece enviado.",
+  "cliente": "C-01",
+  "turnos": [
+    "Cancela mi pedido P-1015, ya no lo necesito."
+  ],
+  "verificaciones": {
+    "herramientas_llamadas": [],
+    "herramientas_no_llamadas": [
+      "cancelar_pedido"
+    ],
+    "argumentos": [],
+    "estado_final": []
+  }
+}
