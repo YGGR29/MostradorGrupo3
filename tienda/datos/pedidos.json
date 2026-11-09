@@ -239,36 +239,5 @@
     ],
     "total": 280000,
     "nota_cliente": "Por favor llamar antes de entregar."
-  },
-  {
-    "numero": "P-1016",
-    "cliente_id": "C-01",
-    "fecha_compra": "2026-11-02",
-    "estado": "pagado",
-    "productos": [
-      {
-        "nombre": "Mueble auxiliar nogal",
-        "categoria": "hogar",
-        "cantidad": 1,
-        "precio_unitario": 299000
-      }
-    ],
-    "total": 299000
-  },
-  {
-    "numero": "P-1017",
-    "cliente_id": "C-02",
-    "fecha_compra": "2026-10-29",
-    "fecha_entrega": "2026-10-31",
-    "estado": "entregado",
-    "productos": [
-      {
-        "nombre": "Botas de cuero",
-        "categoria": "ropa",
-        "cantidad": 1,
-        "precio_unitario": 125000
-      }
-    ],
-    "total": 125000
   }
 ]
